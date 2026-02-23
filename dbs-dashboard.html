@@ -1,0 +1,1679 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0">
+<title>DBS — Dashboard</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Syne:wght@400;600;700;800&family=JetBrains+Mono:wght@300;400;500&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --bg: #0a0a0a;
+    --surface: #141414;
+    --surface2: #1c1c1c;
+    --border: #2a2a2a;
+    --text: #e8e8e8;
+    --text-muted: #555;
+    --text-dim: #888;
+    --accent: #22c55e;
+    --orange: #f97316;
+    --blue: #3b82f6;
+    --purple: #a855f7;
+    --pink: #ec4899;
+    --yellow: #eab308;
+    --green: #22c55e;
+    --red: #ef4444;
+    --radius: 16px;
+    --radius-sm: 10px;
+    --font-main: 'Syne', sans-serif;
+    --font-mono: 'JetBrains Mono', monospace;
+  }
+
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+
+  body {
+    background: var(--bg);
+    color: var(--text);
+    font-family: var(--font-main);
+    min-height: 100vh;
+    overflow-x: hidden;
+  }
+
+  /* ======= LAYOUT ======= */
+  .app {
+    max-width: 480px;
+    margin: 0 auto;
+    padding: 0 0 80px;
+  }
+
+  @media (min-width: 768px) {
+    .app { max-width: 100%; padding: 0 24px 40px; }
+    .grid-desktop { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; align-items: start; }
+    .grid-desktop .full-width { grid-column: 1 / -1; }
+    .grid-desktop .left-col { display: flex; flex-direction: column; gap: 16px; }
+    .grid-desktop .right-col { display: flex; flex-direction: column; gap: 16px; }
+  }
+
+  @media (min-width: 1200px) {
+    .app { max-width: 1100px; }
+    .grid-desktop { grid-template-columns: 1fr 1fr 1fr; }
+  }
+
+  /* ======= HEADER ======= */
+  .header {
+    padding: 28px 20px 16px;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    border-bottom: 1px solid var(--border);
+    margin-bottom: 16px;
+  }
+
+  .logo {
+    font-size: 2rem;
+    font-weight: 800;
+    letter-spacing: -2px;
+    background: linear-gradient(135deg, #fff 40%, #555);
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+  }
+
+  .sync-btn {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    background: var(--surface2);
+    border: 1px solid var(--border);
+    color: var(--text-dim);
+    font-family: var(--font-mono);
+    font-size: 0.7rem;
+    padding: 6px 12px;
+    border-radius: 20px;
+    cursor: pointer;
+    transition: all 0.2s;
+  }
+  .sync-btn:hover { color: var(--accent); border-color: var(--accent); }
+  .sync-btn.synced { color: var(--accent); }
+  .sync-dot { width: 6px; height: 6px; border-radius: 50%; background: var(--text-muted); }
+  .sync-dot.ok { background: var(--accent); box-shadow: 0 0 6px var(--accent); }
+
+  /* ======= CARD ======= */
+  .card {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: var(--radius);
+    margin: 0 12px 16px;
+    overflow: hidden;
+    position: relative;
+  }
+
+  @media (min-width: 768px) { .card { margin: 0; } }
+
+  /* ======= QUOTE ======= */
+  .quote-card {
+    padding: 24px;
+    background: linear-gradient(135deg, var(--surface) 0%, #0f1f0f 100%);
+    border-color: #1a2e1a;
+  }
+  .quote-text {
+    font-size: 1.05rem;
+    font-style: italic;
+    line-height: 1.6;
+    color: #c8e6c9;
+    margin-bottom: 10px;
+  }
+  .quote-author {
+    font-family: var(--font-mono);
+    font-size: 0.65rem;
+    letter-spacing: 2px;
+    color: var(--text-muted);
+  }
+
+  /* ======= HEATMAP & CLOCK ROW ======= */
+  .widgets-row {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 12px;
+    margin: 0 12px 16px;
+  }
+  @media (min-width: 768px) { .widgets-row { margin: 0; } }
+
+  .heatmap-card, .clock-card {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: var(--radius);
+    padding: 16px;
+  }
+
+  /* HEATMAP */
+  .heatmap-label {
+    font-family: var(--font-mono);
+    font-size: 0.6rem;
+    color: var(--text-muted);
+    letter-spacing: 1px;
+    margin-bottom: 10px;
+    text-transform: uppercase;
+  }
+  .heatmap-months {
+    display: flex;
+    gap: 4px;
+    margin-bottom: 4px;
+    padding-left: 18px;
+  }
+  .heatmap-month-label {
+    font-family: var(--font-mono);
+    font-size: 0.55rem;
+    color: var(--text-muted);
+    width: 28px;
+    text-align: center;
+  }
+  .heatmap-grid-container {
+    display: flex;
+    gap: 4px;
+  }
+  .heatmap-days-labels {
+    display: flex;
+    flex-direction: column;
+    gap: 3px;
+    padding-top: 2px;
+  }
+  .heatmap-day-label {
+    font-family: var(--font-mono);
+    font-size: 0.5rem;
+    color: var(--text-muted);
+    height: 11px;
+    line-height: 11px;
+    width: 14px;
+  }
+  .heatmap-grid {
+    display: flex;
+    gap: 3px;
+  }
+  .heatmap-col {
+    display: flex;
+    flex-direction: column;
+    gap: 3px;
+  }
+  .heatmap-cell {
+    width: 11px;
+    height: 11px;
+    border-radius: 2px;
+    background: #1e1e1e;
+    cursor: pointer;
+    transition: transform 0.1s;
+    position: relative;
+  }
+  .heatmap-cell:hover { transform: scale(1.3); z-index: 10; }
+  .heatmap-cell[data-level="1"] { background: #14532d; }
+  .heatmap-cell[data-level="2"] { background: #166534; }
+  .heatmap-cell[data-level="3"] { background: #16a34a; }
+  .heatmap-cell[data-level="4"] { background: #22c55e; }
+  .heatmap-cell[data-today="true"] { outline: 1.5px solid var(--orange); outline-offset: 1px; }
+
+  .heatmap-legend {
+    display: flex;
+    align-items: center;
+    gap: 3px;
+    margin-top: 8px;
+    font-family: var(--font-mono);
+    font-size: 0.5rem;
+    color: var(--text-muted);
+  }
+  .legend-cell {
+    width: 9px; height: 9px; border-radius: 2px;
+  }
+
+  /* CLOCK */
+  .clock-card {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    gap: 12px;
+  }
+  canvas#clockCanvas {
+    border-radius: 50%;
+  }
+  .clock-digital {
+    font-family: var(--font-mono);
+    font-size: 1rem;
+    font-weight: 500;
+    color: var(--text);
+    letter-spacing: 2px;
+  }
+
+  /* ======= SECTION HEADER ======= */
+  .section-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 18px 20px 12px;
+  }
+  .section-title {
+    font-family: var(--font-mono);
+    font-size: 0.7rem;
+    letter-spacing: 3px;
+    color: var(--text-muted);
+    text-transform: uppercase;
+  }
+  .btn-group { display: flex; gap: 8px; }
+
+  .btn {
+    display: flex;
+    align-items: center;
+    gap: 5px;
+    font-family: var(--font-main);
+    font-size: 0.75rem;
+    font-weight: 600;
+    padding: 6px 14px;
+    border-radius: 20px;
+    border: 1px solid var(--border);
+    cursor: pointer;
+    transition: all 0.2s;
+    background: transparent;
+    color: var(--text-dim);
+  }
+  .btn:hover { background: var(--surface2); color: var(--text); }
+  .btn-primary { background: var(--text); color: #000; border-color: transparent; }
+  .btn-primary:hover { background: #ccc; }
+  .btn-danger { color: var(--red); border-color: var(--red); }
+  .btn-danger:hover { background: #1a0000; }
+
+  /* ======= COURSES ======= */
+  .courses-list { padding: 4px 20px 20px; }
+
+  .course-item {
+    margin-bottom: 20px;
+    position: relative;
+  }
+  .course-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    margin-bottom: 8px;
+  }
+  .course-name-row {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    font-size: 0.95rem;
+    font-weight: 600;
+  }
+  .course-dot {
+    width: 10px; height: 10px; border-radius: 50%;
+    flex-shrink: 0;
+  }
+  .course-pct {
+    font-family: var(--font-mono);
+    font-size: 0.8rem;
+    font-weight: 500;
+  }
+
+  .progress-track {
+    width: 100%;
+    height: 4px;
+    background: var(--border);
+    border-radius: 4px;
+    overflow: hidden;
+  }
+  .progress-fill {
+    height: 100%;
+    border-radius: 4px;
+    transition: width 0.6s cubic-bezier(0.25, 0.46, 0.45, 0.94);
+  }
+
+  /* Edit mode */
+  .course-edit-row {
+    display: none;
+    align-items: center;
+    gap: 8px;
+    margin-top: 8px;
+  }
+  .edit-mode .course-edit-row { display: flex; }
+  .edit-mode .progress-track { display: none; }
+
+  .edit-slider {
+    flex: 1;
+    -webkit-appearance: none;
+    height: 4px;
+    border-radius: 4px;
+    background: var(--border);
+    outline: none;
+  }
+  .edit-slider::-webkit-slider-thumb {
+    -webkit-appearance: none;
+    width: 16px; height: 16px;
+    border-radius: 50%;
+    background: var(--text);
+    cursor: pointer;
+    box-shadow: 0 0 0 3px rgba(255,255,255,0.1);
+  }
+
+  .color-picker-row {
+    display: none;
+    gap: 8px;
+    margin-top: 6px;
+    flex-wrap: wrap;
+  }
+  .edit-mode .color-picker-row { display: flex; }
+
+  .color-swatch {
+    width: 20px; height: 20px;
+    border-radius: 50%;
+    cursor: pointer;
+    border: 2px solid transparent;
+    transition: transform 0.15s;
+  }
+  .color-swatch:hover, .color-swatch.active { transform: scale(1.2); border-color: white; }
+
+  /* ======= STATS MINI ======= */
+  .stats-row {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 8px;
+    padding: 0 20px 20px;
+  }
+  .stat-card {
+    background: var(--surface2);
+    border-radius: var(--radius-sm);
+    padding: 12px;
+    text-align: center;
+  }
+  .stat-val {
+    font-size: 1.4rem;
+    font-weight: 800;
+    font-family: var(--font-mono);
+  }
+  .stat-label {
+    font-size: 0.6rem;
+    color: var(--text-muted);
+    margin-top: 2px;
+    font-family: var(--font-mono);
+    letter-spacing: 1px;
+  }
+
+  /* ======= GOALS ======= */
+  .goals-list { padding: 4px 20px 16px; min-height: 60px; }
+
+  .goal-item {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    padding: 10px 0;
+    border-bottom: 1px solid var(--border);
+    cursor: pointer;
+    transition: opacity 0.2s;
+    position: relative;
+  }
+  .goal-item:last-child { border-bottom: none; }
+  .goal-check {
+    width: 18px; height: 18px;
+    border: 1.5px solid var(--border);
+    border-radius: 50%;
+    flex-shrink: 0;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    transition: all 0.2s;
+    font-size: 0.65rem;
+  }
+  .goal-item.done .goal-check {
+    background: var(--accent);
+    border-color: var(--accent);
+    color: #000;
+  }
+  .goal-item.done .goal-text { text-decoration: line-through; color: var(--text-muted); }
+
+  .goal-text { flex: 1; font-size: 0.88rem; }
+  .goal-priority {
+    width: 8px; height: 8px;
+    border-radius: 50%;
+    flex-shrink: 0;
+  }
+  .goal-delete {
+    opacity: 0;
+    font-size: 0.75rem;
+    color: var(--text-muted);
+    padding: 2px 6px;
+    cursor: pointer;
+    background: none;
+    border: none;
+    color: var(--red);
+    transition: opacity 0.2s;
+  }
+  .goal-item:hover .goal-delete { opacity: 1; }
+
+  .goal-input-row {
+    display: flex;
+    gap: 8px;
+    padding: 0 20px 20px;
+  }
+  .goal-input {
+    flex: 1;
+    background: var(--surface2);
+    border: 1px solid var(--border);
+    border-radius: var(--radius-sm);
+    padding: 10px 14px;
+    color: var(--text);
+    font-family: var(--font-main);
+    font-size: 0.85rem;
+    outline: none;
+    transition: border-color 0.2s;
+  }
+  .goal-input:focus { border-color: var(--accent); }
+  .goal-input::placeholder { color: var(--text-muted); }
+
+  .priority-select {
+    background: var(--surface2);
+    border: 1px solid var(--border);
+    border-radius: var(--radius-sm);
+    padding: 10px 8px;
+    color: var(--text);
+    font-size: 1rem;
+    cursor: pointer;
+    outline: none;
+  }
+
+  .add-goal-btn {
+    background: var(--surface2);
+    border: 1px solid var(--border);
+    border-radius: var(--radius-sm);
+    padding: 10px 14px;
+    color: var(--text);
+    font-size: 1rem;
+    cursor: pointer;
+    font-weight: 700;
+    transition: all 0.2s;
+  }
+  .add-goal-btn:hover { background: var(--accent); color: #000; border-color: var(--accent); }
+
+  .empty-state {
+    color: var(--text-muted);
+    font-size: 0.85rem;
+    padding: 12px 0;
+    font-style: italic;
+  }
+
+  /* ======= POMODORO ======= */
+  .pomodoro-card { padding: 20px; }
+  .pomodoro-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    margin-bottom: 20px;
+  }
+  .pomodoro-display {
+    text-align: center;
+  }
+  .pomodoro-time {
+    font-family: var(--font-mono);
+    font-size: 3rem;
+    font-weight: 300;
+    letter-spacing: 4px;
+    line-height: 1;
+  }
+  .pomodoro-mode {
+    font-family: var(--font-mono);
+    font-size: 0.6rem;
+    color: var(--text-muted);
+    letter-spacing: 3px;
+    margin-top: 6px;
+    text-transform: uppercase;
+  }
+  .pomodoro-ring {
+    position: relative;
+    width: 120px;
+    height: 120px;
+    margin: 0 auto 16px;
+  }
+  .pomodoro-ring svg {
+    transform: rotate(-90deg);
+    width: 120px; height: 120px;
+  }
+  .pomodoro-ring circle {
+    fill: none;
+    stroke-width: 4;
+  }
+  #pomoTrack { stroke: var(--surface2); }
+  #pomoProgress { stroke: var(--orange); stroke-linecap: round; transition: stroke-dashoffset 1s linear; }
+  .pomodoro-time-center {
+    position: absolute;
+    top: 50%; left: 50%;
+    transform: translate(-50%, -50%);
+    font-family: var(--font-mono);
+    font-size: 1.3rem;
+    font-weight: 500;
+    text-align: center;
+  }
+  .pomodoro-subtext {
+    font-family: var(--font-mono);
+    font-size: 0.5rem;
+    color: var(--text-muted);
+    display: block;
+    margin-top: 2px;
+    letter-spacing: 2px;
+  }
+
+  .pomo-controls {
+    display: flex;
+    justify-content: center;
+    gap: 12px;
+    margin-top: 12px;
+  }
+  .pomo-btn {
+    background: var(--surface2);
+    border: 1px solid var(--border);
+    border-radius: 50%;
+    width: 44px; height: 44px;
+    display: flex; align-items: center; justify-content: center;
+    cursor: pointer;
+    font-size: 1rem;
+    color: var(--text);
+    transition: all 0.2s;
+  }
+  .pomo-btn:hover { background: var(--border); }
+  .pomo-btn.active { background: var(--orange); border-color: var(--orange); color: #000; }
+
+  .pomo-modes {
+    display: flex;
+    justify-content: center;
+    gap: 8px;
+    margin-top: 12px;
+  }
+  .pomo-mode-btn {
+    font-family: var(--font-mono);
+    font-size: 0.6rem;
+    letter-spacing: 1px;
+    padding: 4px 10px;
+    border-radius: 20px;
+    border: 1px solid var(--border);
+    background: transparent;
+    color: var(--text-muted);
+    cursor: pointer;
+    transition: all 0.2s;
+  }
+  .pomo-mode-btn.active { border-color: var(--orange); color: var(--orange); }
+
+  /* ======= MODAL ======= */
+  .modal-overlay {
+    display: none;
+    position: fixed;
+    inset: 0;
+    background: rgba(0,0,0,0.85);
+    z-index: 100;
+    align-items: flex-end;
+    justify-content: center;
+    backdrop-filter: blur(4px);
+  }
+  .modal-overlay.open { display: flex; }
+  @media (min-width: 768px) { .modal-overlay { align-items: center; } }
+
+  .modal {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: var(--radius) var(--radius) 0 0;
+    padding: 24px;
+    width: 100%;
+    max-width: 500px;
+    max-height: 90vh;
+    overflow-y: auto;
+    animation: slideUp 0.3s ease;
+  }
+  @media (min-width: 768px) { .modal { border-radius: var(--radius); } }
+
+  @keyframes slideUp {
+    from { transform: translateY(100px); opacity: 0; }
+    to { transform: translateY(0); opacity: 1; }
+  }
+
+  .modal-title {
+    font-size: 1.1rem;
+    font-weight: 700;
+    margin-bottom: 20px;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+  }
+  .modal-close {
+    background: none;
+    border: none;
+    color: var(--text-muted);
+    font-size: 1.3rem;
+    cursor: pointer;
+    padding: 0 4px;
+  }
+  .modal-close:hover { color: var(--text); }
+
+  .form-group { margin-bottom: 16px; }
+  .form-label {
+    display: block;
+    font-family: var(--font-mono);
+    font-size: 0.65rem;
+    letter-spacing: 2px;
+    color: var(--text-muted);
+    margin-bottom: 6px;
+  }
+  .form-input {
+    width: 100%;
+    background: var(--surface2);
+    border: 1px solid var(--border);
+    border-radius: var(--radius-sm);
+    padding: 10px 14px;
+    color: var(--text);
+    font-family: var(--font-main);
+    font-size: 0.9rem;
+    outline: none;
+  }
+  .form-input:focus { border-color: var(--accent); }
+
+  /* ALL GOALS VIEW */
+  .all-goals-view {
+    display: none;
+    position: fixed;
+    inset: 0;
+    background: var(--bg);
+    z-index: 50;
+    overflow-y: auto;
+    padding: 24px 16px;
+    animation: fadeIn 0.2s ease;
+  }
+  .all-goals-view.open { display: block; }
+  @keyframes fadeIn { from { opacity: 0; } to { opacity: 1; } }
+
+  .back-btn {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    font-family: var(--font-mono);
+    font-size: 0.75rem;
+    color: var(--text-muted);
+    background: none;
+    border: none;
+    cursor: pointer;
+    margin-bottom: 24px;
+    padding: 0;
+  }
+  .back-btn:hover { color: var(--text); }
+
+  /* SYNC MODAL */
+  .sync-info {
+    font-family: var(--font-mono);
+    font-size: 0.72rem;
+    line-height: 1.7;
+    color: var(--text-dim);
+    background: var(--surface2);
+    border-radius: var(--radius-sm);
+    padding: 14px;
+    margin-bottom: 16px;
+    border: 1px solid var(--border);
+  }
+  .sync-info strong { color: var(--accent); }
+
+  /* NAV */
+  .bottom-nav {
+    position: fixed;
+    bottom: 0; left: 0; right: 0;
+    background: rgba(10,10,10,0.95);
+    border-top: 1px solid var(--border);
+    display: flex;
+    justify-content: space-around;
+    padding: 10px 0 16px;
+    backdrop-filter: blur(10px);
+    z-index: 40;
+  }
+  .nav-item {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 3px;
+    cursor: pointer;
+    color: var(--text-muted);
+    font-size: 0.6rem;
+    font-family: var(--font-mono);
+    transition: color 0.2s;
+    padding: 4px 16px;
+  }
+  .nav-item.active { color: var(--accent); }
+  .nav-icon { font-size: 1.1rem; }
+
+  @media (min-width: 768px) { .bottom-nav { display: none; } }
+
+  /* PAGES */
+  .page { display: none; }
+  .page.active { display: block; }
+
+  /* TOAST */
+  .toast {
+    position: fixed;
+    bottom: 80px;
+    left: 50%;
+    transform: translateX(-50%) translateY(20px);
+    background: var(--surface2);
+    border: 1px solid var(--border);
+    border-radius: 20px;
+    padding: 8px 20px;
+    font-family: var(--font-mono);
+    font-size: 0.75rem;
+    opacity: 0;
+    transition: all 0.3s;
+    pointer-events: none;
+    z-index: 200;
+    white-space: nowrap;
+  }
+  .toast.show { opacity: 1; transform: translateX(-50%) translateY(0); }
+  @media (min-width: 768px) { .toast { bottom: 24px; } }
+
+  /* Streak widget */
+  .streak-val {
+    font-family: var(--font-mono);
+    font-size: 2.5rem;
+    font-weight: 800;
+    line-height: 1;
+  }
+  .streak-fire { font-size: 1.8rem; }
+
+  /* Scrollbar */
+  ::-webkit-scrollbar { width: 4px; }
+  ::-webkit-scrollbar-track { background: transparent; }
+  ::-webkit-scrollbar-thumb { background: var(--border); border-radius: 4px; }
+
+  .divider { height: 1px; background: var(--border); margin: 0 20px; }
+</style>
+</head>
+<body>
+
+<!-- TOAST -->
+<div class="toast" id="toast"></div>
+
+<!-- ALL GOALS VIEW -->
+<div class="all-goals-view" id="allGoalsView">
+  <button class="back-btn" onclick="closeAllGoals()">← VOLVER</button>
+  <h2 style="font-size:1.5rem;font-weight:800;margin-bottom:20px;">Todas las metas</h2>
+  <div id="allGoalsList"></div>
+</div>
+
+<!-- SYNC MODAL -->
+<div class="modal-overlay" id="syncModal">
+  <div class="modal">
+    <div class="modal-title">
+      Sincronización
+      <button class="modal-close" onclick="closeSyncModal()">×</button>
+    </div>
+    <div class="sync-info">
+      Para sincronizar entre dispositivos, los datos se guardan en un <strong>GitHub Gist privado</strong>.<br><br>
+      1. Ve a <strong>github.com → Settings → Developer Settings → Personal Access Tokens</strong><br>
+      2. Genera un token con permiso <strong>gist</strong><br>
+      3. Pégalo aquí y guarda.
+    </div>
+    <div class="form-group">
+      <label class="form-label">GitHub Token (ghp_...)</label>
+      <input class="form-input" id="ghToken" type="password" placeholder="ghp_xxxxxxxxxxxx">
+    </div>
+    <div class="form-group">
+      <label class="form-label">Gist ID (opcional, déjalo vacío la primera vez)</label>
+      <input class="form-input" id="ghGistId" type="text" placeholder="se creará automáticamente">
+    </div>
+    <div style="display:flex;gap:8px;margin-top:8px;">
+      <button class="btn btn-primary" onclick="saveGistConfig()" style="flex:1;">Guardar & Conectar</button>
+      <button class="btn" onclick="pullFromGist()" style="flex:1;">↓ Importar</button>
+    </div>
+    <div style="margin-top:8px;">
+      <button class="btn" style="width:100%;justify-content:center;" onclick="pushToGist()">↑ Exportar a Gist</button>
+    </div>
+  </div>
+</div>
+
+<!-- ADD COURSE MODAL -->
+<div class="modal-overlay" id="addCourseModal">
+  <div class="modal">
+    <div class="modal-title">
+      Nuevo curso
+      <button class="modal-close" onclick="closeModal('addCourseModal')">×</button>
+    </div>
+    <div class="form-group">
+      <label class="form-label">Nombre del curso</label>
+      <input class="form-input" id="newCourseName" type="text" placeholder="Ej: Arduino, Unity...">
+    </div>
+    <div class="form-group">
+      <label class="form-label">Color</label>
+      <div style="display:flex;gap:8px;flex-wrap:wrap;" id="newCourseColors"></div>
+    </div>
+    <button class="btn btn-primary" style="width:100%;justify-content:center;" onclick="addCourse()">Agregar curso</button>
+  </div>
+</div>
+
+<!-- MAIN APP -->
+<div class="app">
+  <!-- HEADER -->
+  <div class="header">
+    <div class="logo">DBS</div>
+    <button class="sync-btn" id="syncBtn" onclick="openSyncModal()">
+      <span class="sync-dot" id="syncDot"></span>
+      <span id="syncLabel">SYNC</span>
+    </button>
+  </div>
+
+  <!-- DESKTOP: two-column layout wrapper -->
+  <div class="grid-desktop">
+    <!-- LEFT COL (on desktop) -->
+    <div class="left-col">
+
+      <!-- QUOTE -->
+      <div class="card quote-card" id="quoteCard">
+        <p class="quote-text" id="quoteText">Cargando...</p>
+        <p class="quote-author" id="quoteAuthor"></p>
+      </div>
+
+      <!-- HEATMAP + CLOCK ROW -->
+      <div class="widgets-row">
+        <!-- HEATMAP -->
+        <div class="heatmap-card" id="heatmapCard">
+          <div class="heatmap-label">Actividad</div>
+          <div id="heatmapMonths" class="heatmap-months"></div>
+          <div class="heatmap-grid-container">
+            <div class="heatmap-days-labels">
+              <div class="heatmap-day-label">D</div>
+              <div class="heatmap-day-label">L</div>
+              <div class="heatmap-day-label">M</div>
+              <div class="heatmap-day-label">X</div>
+              <div class="heatmap-day-label">J</div>
+              <div class="heatmap-day-label">V</div>
+              <div class="heatmap-day-label">S</div>
+            </div>
+            <div class="heatmap-grid" id="heatmapGrid"></div>
+          </div>
+          <div class="heatmap-legend">
+            <span>Menos</span>
+            <div class="legend-cell" style="background:#1e1e1e;"></div>
+            <div class="legend-cell" style="background:#14532d;"></div>
+            <div class="legend-cell" style="background:#166534;"></div>
+            <div class="legend-cell" style="background:#16a34a;"></div>
+            <div class="legend-cell" style="background:#22c55e;"></div>
+            <span>Más</span>
+          </div>
+        </div>
+
+        <!-- CLOCK -->
+        <div class="clock-card">
+          <canvas id="clockCanvas" width="100" height="100"></canvas>
+          <div class="clock-digital" id="clockDigital">00:00:00</div>
+        </div>
+      </div>
+
+      <!-- POMODORO -->
+      <div class="card">
+        <div class="section-header">
+          <span class="section-title">Pomodoro</span>
+          <span id="pomoSessionCount" style="font-family:var(--font-mono);font-size:0.65rem;color:var(--orange);">🍅 0</span>
+        </div>
+        <div style="padding:0 20px 20px;">
+          <div class="pomodoro-ring">
+            <svg viewBox="0 0 120 120">
+              <circle id="pomoTrack" cx="60" cy="60" r="54" stroke-width="6"/>
+              <circle id="pomoProgress" cx="60" cy="60" r="54" stroke-dasharray="339.3" stroke-dashoffset="0" stroke-width="6"/>
+            </svg>
+            <div class="pomodoro-time-center">
+              <span id="pomoDisplay">25:00</span>
+              <span class="pomodoro-subtext" id="pomoModeLabel">FOCO</span>
+            </div>
+          </div>
+          <div class="pomo-modes">
+            <button class="pomo-mode-btn active" onclick="setPomoMode('focus',25)" id="pomoFocusBtn">25m Foco</button>
+            <button class="pomo-mode-btn" onclick="setPomoMode('short',5)" id="pomoShortBtn">5m Descanso</button>
+            <button class="pomo-mode-btn" onclick="setPomoMode('long',15)" id="pomoLongBtn">15m Largo</button>
+          </div>
+          <div class="pomo-controls">
+            <button class="pomo-btn" onclick="resetPomo()" title="Reset">↺</button>
+            <button class="pomo-btn active" id="pomoPlayBtn" onclick="togglePomo()">▶</button>
+            <button class="pomo-btn" onclick="skipPomo()" title="Saltar">⏭</button>
+          </div>
+        </div>
+      </div>
+
+    </div>
+
+    <!-- RIGHT COL (on desktop) -->
+    <div class="right-col">
+
+      <!-- COURSES -->
+      <div class="card">
+        <div class="section-header">
+          <span class="section-title">Cursos</span>
+          <div class="btn-group">
+            <button class="btn" id="editCoursesBtn" onclick="toggleEditCourses()">✎ Editar</button>
+            <button class="btn btn-primary" onclick="openModal('addCourseModal')">+ Agregar</button>
+          </div>
+        </div>
+
+        <!-- Stats -->
+        <div class="stats-row">
+          <div class="stat-card">
+            <div class="stat-val" id="statAvg" style="color:var(--accent)">0%</div>
+            <div class="stat-label">PROMEDIO</div>
+          </div>
+          <div class="stat-card">
+            <div class="stat-val" id="statMax" style="color:var(--orange)">0%</div>
+            <div class="stat-label">MÁXIMO</div>
+          </div>
+          <div class="stat-card">
+            <div class="stat-val" id="statCount" style="color:var(--blue)">0</div>
+            <div class="stat-label">CURSOS</div>
+          </div>
+        </div>
+
+        <div class="divider"></div>
+        <div class="courses-list" id="coursesList"></div>
+      </div>
+
+      <!-- GOALS -->
+      <div class="card">
+        <div class="section-header">
+          <span class="section-title">Metas — Semana</span>
+          <button class="btn" onclick="openAllGoals()">ver todo →</button>
+        </div>
+        <div class="goals-list" id="goalsList"></div>
+        <div class="goal-input-row">
+          <input class="goal-input" id="goalInput" type="text" placeholder="Nueva meta..." onkeydown="if(event.key==='Enter')addGoal()">
+          <select class="priority-select" id="prioritySelect" title="Prioridad">
+            <option value="high">🔴</option>
+            <option value="med" selected>🟡</option>
+            <option value="low">🟢</option>
+          </select>
+          <button class="add-goal-btn" onclick="addGoal()">+</button>
+        </div>
+      </div>
+
+    </div>
+  </div>
+</div>
+
+<!-- BOTTOM NAV (mobile) -->
+<div class="bottom-nav">
+  <div class="nav-item active" onclick="scrollToTop()">
+    <span class="nav-icon">◉</span>
+    <span>Inicio</span>
+  </div>
+  <div class="nav-item" onclick="scrollToCourses()">
+    <span class="nav-icon">◈</span>
+    <span>Cursos</span>
+  </div>
+  <div class="nav-item" onclick="scrollToGoals()">
+    <span class="nav-icon">◎</span>
+    <span>Metas</span>
+  </div>
+  <div class="nav-item" onclick="openSyncModal()">
+    <span class="nav-icon">⇆</span>
+    <span>Sync</span>
+  </div>
+</div>
+
+<script>
+// ==================== STATE ====================
+const COLORS = ['#f97316','#3b82f6','#22c55e','#a855f7','#ec4899','#eab308','#ef4444','#06b6d4','#84cc16'];
+
+let state = {
+  courses: [
+    { id:1, name:'PLC Siemens', pct:0, color:'#f97316' },
+    { id:2, name:'Fanuc Robot', pct:0, color:'#3b82f6' },
+    { id:3, name:'C#', pct:0, color:'#22c55e' },
+    { id:4, name:'Python', pct:0, color:'#a855f7' },
+    { id:5, name:'Mecánica Automotriz', pct:0, color:'#ec4899' },
+    { id:6, name:'VisionPro', pct:0, color:'#eab308' },
+  ],
+  goals: [],
+  heatmap: {},
+  pomodoroSessions: 0,
+  selectedColor: '#f97316',
+};
+
+// ==================== PERSIST ====================
+function saveLocal() {
+  localStorage.setItem('dbs_state', JSON.stringify(state));
+}
+
+function loadLocal() {
+  const s = localStorage.getItem('dbs_state');
+  if (s) {
+    try {
+      const parsed = JSON.parse(s);
+      state = { ...state, ...parsed };
+    } catch(e) {}
+  }
+}
+
+// ==================== GIST SYNC ====================
+let gistConfig = JSON.parse(localStorage.getItem('dbs_gist') || '{}');
+
+function openSyncModal() {
+  document.getElementById('ghToken').value = gistConfig.token || '';
+  document.getElementById('ghGistId').value = gistConfig.gistId || '';
+  document.getElementById('syncModal').classList.add('open');
+}
+
+function closeSyncModal() {
+  document.getElementById('syncModal').classList.remove('open');
+}
+
+function saveGistConfig() {
+  gistConfig.token = document.getElementById('ghToken').value.trim();
+  gistConfig.gistId = document.getElementById('ghGistId').value.trim();
+  localStorage.setItem('dbs_gist', JSON.stringify(gistConfig));
+  showToast('Config guardada');
+  pushToGist();
+}
+
+async function pushToGist() {
+  if (!gistConfig.token) { showToast('Agrega un token primero'); return; }
+  const body = { files: { 'dbs_data.json': { content: JSON.stringify(state) } } };
+  let url = 'https://api.github.com/gists';
+  let method = 'POST';
+  if (gistConfig.gistId) { url += '/' + gistConfig.gistId; method = 'PATCH'; }
+
+  try {
+    const res = await fetch(url, {
+      method,
+      headers: { Authorization: 'token ' + gistConfig.token, 'Content-Type': 'application/json' },
+      body: JSON.stringify(body)
+    });
+    const data = await res.json();
+    if (data.id) {
+      gistConfig.gistId = data.id;
+      document.getElementById('ghGistId').value = data.id;
+      localStorage.setItem('dbs_gist', JSON.stringify(gistConfig));
+      setSyncStatus(true);
+      showToast('✓ Datos exportados al Gist');
+    } else {
+      showToast('Error: ' + (data.message || 'desconocido'));
+    }
+  } catch(e) { showToast('Error de red'); }
+}
+
+async function pullFromGist() {
+  if (!gistConfig.token || !gistConfig.gistId) { showToast('Configura token y Gist ID'); return; }
+  try {
+    const res = await fetch('https://api.github.com/gists/' + gistConfig.gistId, {
+      headers: { Authorization: 'token ' + gistConfig.token }
+    });
+    const data = await res.json();
+    const content = data.files?.['dbs_data.json']?.content;
+    if (content) {
+      state = JSON.parse(content);
+      saveLocal();
+      renderAll();
+      setSyncStatus(true);
+      showToast('✓ Datos importados del Gist');
+      closeSyncModal();
+    }
+  } catch(e) { showToast('Error importando'); }
+}
+
+function setSyncStatus(ok) {
+  document.getElementById('syncDot').className = 'sync-dot' + (ok ? ' ok' : '');
+  document.getElementById('syncLabel').textContent = ok ? 'SYNC ✓' : 'SYNC';
+}
+
+// ==================== QUOTES ====================
+const quotes = [
+  { text: 'El éxito es la suma de pequeños esfuerzos repetidos día tras día.', author: 'ROBERT COLLIER' },
+  { text: 'La disciplina es el puente entre metas y logros.', author: 'JIM ROHN' },
+  { text: 'No cuentes los días, haz que los días cuenten.', author: 'MUHAMMAD ALI' },
+  { text: 'Un experto fue una vez un principiante.', author: 'HELEN HAYES' },
+  { text: 'El conocimiento es poder, pero el entusiasmo jala el interruptor.', author: 'IVERN BALL' },
+  { text: 'Aprende como si fueras a vivir para siempre.', author: 'MAHATMA GANDHI' },
+];
+
+function loadQuote() {
+  const today = new Date().toDateString();
+  let idx = parseInt(localStorage.getItem('dbs_quote_idx') || '0');
+  const lastDay = localStorage.getItem('dbs_quote_day');
+  if (lastDay !== today) {
+    idx = Math.floor(Math.random() * quotes.length);
+    localStorage.setItem('dbs_quote_idx', idx);
+    localStorage.setItem('dbs_quote_day', today);
+  }
+  const q = quotes[idx];
+  document.getElementById('quoteText').textContent = q.text;
+  document.getElementById('quoteAuthor').textContent = '— ' + q.author;
+}
+
+// ==================== CLOCK ====================
+function drawClock() {
+  const canvas = document.getElementById('clockCanvas');
+  const ctx = canvas.getContext('2d');
+  const now = new Date();
+  const W = canvas.width, H = canvas.height;
+  const cx = W/2, cy = H/2, r = W/2 - 4;
+
+  ctx.clearRect(0,0,W,H);
+
+  // Background
+  ctx.beginPath();
+  ctx.arc(cx,cy,r,0,Math.PI*2);
+  ctx.fillStyle = '#1c1c1c';
+  ctx.fill();
+
+  // Hour marks
+  for (let i=0;i<12;i++) {
+    const angle = (i/12)*Math.PI*2 - Math.PI/2;
+    const x1 = cx + Math.cos(angle)*(r-4);
+    const y1 = cy + Math.sin(angle)*(r-4);
+    const x2 = cx + Math.cos(angle)*(r-10);
+    const y2 = cy + Math.sin(angle)*(r-10);
+    ctx.beginPath();
+    ctx.moveTo(x1,y1);
+    ctx.lineTo(x2,y2);
+    ctx.strokeStyle = '#333';
+    ctx.lineWidth = 1.5;
+    ctx.stroke();
+  }
+
+  const h = now.getHours()%12, m = now.getMinutes(), s = now.getSeconds();
+  const msec = now.getMilliseconds();
+
+  // Hour hand
+  drawHand(ctx,cx,cy, ((h*60+m)/720)*Math.PI*2-Math.PI/2, r*0.5, '#c8c8c8', 3);
+  // Minute hand
+  drawHand(ctx,cx,cy, ((m*60+s)/3600)*Math.PI*2-Math.PI/2, r*0.7, '#e8e8e8', 2);
+  // Second hand
+  drawHand(ctx,cx,cy, ((s*1000+msec)/60000)*Math.PI*2-Math.PI/2, r*0.8, '#22c55e', 1);
+
+  // Center dot
+  ctx.beginPath();
+  ctx.arc(cx,cy,3,0,Math.PI*2);
+  ctx.fillStyle = '#fff';
+  ctx.fill();
+
+  // Digital
+  const pad = n => String(n).padStart(2,'0');
+  document.getElementById('clockDigital').textContent = `${pad(now.getHours())}:${pad(m)}:${pad(s)}`;
+
+  requestAnimationFrame(drawClock);
+}
+
+function drawHand(ctx,cx,cy,angle,length,color,width) {
+  ctx.beginPath();
+  ctx.moveTo(cx,cy);
+  ctx.lineTo(cx+Math.cos(angle)*length, cy+Math.sin(angle)*length);
+  ctx.strokeStyle = color;
+  ctx.lineWidth = width;
+  ctx.lineCap = 'round';
+  ctx.stroke();
+}
+
+// ==================== HEATMAP ====================
+function buildHeatmap() {
+  const grid = document.getElementById('heatmapGrid');
+  const monthsEl = document.getElementById('heatmapMonths');
+  grid.innerHTML = '';
+  monthsEl.innerHTML = '';
+
+  const today = new Date();
+  const numWeeks = 12;
+  const start = new Date(today);
+  start.setDate(start.getDate() - (numWeeks*7) + 1);
+  // Adjust to start of week (Sunday)
+  const startDay = start.getDay();
+  start.setDate(start.getDate() - startDay);
+
+  // Month labels
+  let monthCols = [];
+  let prevMonth = -1;
+  const cur = new Date(start);
+  for (let w=0;w<numWeeks+1;w++) {
+    const m = cur.getMonth();
+    if (m !== prevMonth) {
+      monthCols.push({ week: w, label: cur.toLocaleString('es',{month:'short'}) });
+      prevMonth = m;
+    }
+    cur.setDate(cur.getDate()+7);
+  }
+
+  // Build month label row
+  let lastW = 0;
+  monthCols.forEach((mc,i) => {
+    const next = monthCols[i+1] ? monthCols[i+1].week : numWeeks+1;
+    const span = next - mc.week;
+    const el = document.createElement('div');
+    el.className = 'heatmap-month-label';
+    el.style.width = (span * 14) + 'px';
+    el.textContent = mc.label;
+    monthsEl.appendChild(el);
+  });
+
+  // Build cells
+  const curDate = new Date(start);
+  for (let w=0;w<numWeeks+1;w++) {
+    const col = document.createElement('div');
+    col.className = 'heatmap-col';
+    for (let d=0;d<7;d++) {
+      const cell = document.createElement('div');
+      cell.className = 'heatmap-cell';
+      const key = dateKey(curDate);
+      const level = state.heatmap[key] || 0;
+      if (level) cell.dataset.level = level;
+      const todayKey = dateKey(today);
+      if (key === todayKey) cell.dataset.today = 'true';
+      cell.title = curDate.toLocaleDateString('es') + ' — ' + (level ? ['Poco','Algo','Bastante','Mucho'][level-1] : 'Sin actividad');
+      cell.addEventListener('click', () => {
+        if (key > dateKey(today)) return;
+        const next = ((state.heatmap[key] || 0) + 1) % 5;
+        if (next === 0) delete state.heatmap[key];
+        else state.heatmap[key] = next;
+        cell.dataset.level = next || '';
+        if (!next) delete cell.dataset.level;
+        saveLocal();
+        pushToGistDebounced();
+      });
+      col.appendChild(cell);
+      curDate.setDate(curDate.getDate()+1);
+    }
+    grid.appendChild(col);
+  }
+}
+
+function dateKey(d) {
+  return d.toISOString().slice(0,10);
+}
+
+let pushTimer;
+function pushToGistDebounced() {
+  clearTimeout(pushTimer);
+  pushTimer = setTimeout(() => { if (gistConfig.token && gistConfig.gistId) pushToGist(); }, 3000);
+}
+
+// ==================== COURSES ====================
+let editingCourses = false;
+
+function toggleEditCourses() {
+  editingCourses = !editingCourses;
+  const btn = document.getElementById('editCoursesBtn');
+  btn.textContent = editingCourses ? '✓ Listo' : '✎ Editar';
+  btn.style.color = editingCourses ? 'var(--accent)' : '';
+  btn.style.borderColor = editingCourses ? 'var(--accent)' : '';
+  renderCourses();
+}
+
+function renderCourses() {
+  const list = document.getElementById('coursesList');
+  list.innerHTML = '';
+
+  state.courses.forEach(c => {
+    const item = document.createElement('div');
+    item.className = 'course-item' + (editingCourses ? ' edit-mode' : '');
+
+    const header = document.createElement('div');
+    header.className = 'course-header';
+
+    const nameRow = document.createElement('div');
+    nameRow.className = 'course-name-row';
+    const dot = document.createElement('div');
+    dot.className = 'course-dot';
+    dot.style.background = c.color;
+    dot.style.boxShadow = `0 0 8px ${c.color}66`;
+    const name = document.createElement('span');
+    name.textContent = c.name;
+    nameRow.appendChild(dot);
+    nameRow.appendChild(name);
+
+    const pct = document.createElement('span');
+    pct.className = 'course-pct';
+    pct.style.color = c.color;
+    pct.textContent = c.pct + '%';
+
+    header.appendChild(nameRow);
+    header.appendChild(pct);
+
+    const track = document.createElement('div');
+    track.className = 'progress-track';
+    const fill = document.createElement('div');
+    fill.className = 'progress-fill';
+    fill.style.width = c.pct + '%';
+    fill.style.background = `linear-gradient(90deg, ${c.color}cc, ${c.color})`;
+    track.appendChild(fill);
+
+    // Edit row
+    const editRow = document.createElement('div');
+    editRow.className = 'course-edit-row';
+    const slider = document.createElement('input');
+    slider.type = 'range';
+    slider.min = 0; slider.max = 100;
+    slider.value = c.pct;
+    slider.className = 'edit-slider';
+    slider.addEventListener('input', () => {
+      c.pct = parseInt(slider.value);
+      pct.textContent = c.pct + '%';
+      saveLocal();
+      pushToGistDebounced();
+      updateStats();
+    });
+
+    const delBtn = document.createElement('button');
+    delBtn.className = 'btn btn-danger';
+    delBtn.style.padding = '4px 10px';
+    delBtn.style.fontSize = '0.7rem';
+    delBtn.textContent = '✕';
+    delBtn.onclick = () => {
+      state.courses = state.courses.filter(x => x.id !== c.id);
+      saveLocal();
+      pushToGistDebounced();
+      renderCourses();
+      updateStats();
+    };
+
+    editRow.appendChild(slider);
+    editRow.appendChild(delBtn);
+
+    // Color picker
+    const colorRow = document.createElement('div');
+    colorRow.className = 'color-picker-row';
+    COLORS.forEach(col => {
+      const sw = document.createElement('div');
+      sw.className = 'color-swatch' + (c.color === col ? ' active' : '');
+      sw.style.background = col;
+      sw.onclick = () => {
+        c.color = col;
+        dot.style.background = col;
+        dot.style.boxShadow = `0 0 8px ${col}66`;
+        pct.style.color = col;
+        fill.style.background = `linear-gradient(90deg, ${col}cc, ${col})`;
+        colorRow.querySelectorAll('.color-swatch').forEach(s => s.classList.remove('active'));
+        sw.classList.add('active');
+        saveLocal();
+        pushToGistDebounced();
+      };
+      colorRow.appendChild(sw);
+    });
+
+    item.appendChild(header);
+    item.appendChild(track);
+    item.appendChild(editRow);
+    item.appendChild(colorRow);
+    list.appendChild(item);
+
+    // Animate fill
+    setTimeout(() => { fill.style.width = c.pct + '%'; }, 50);
+  });
+
+  updateStats();
+}
+
+function updateStats() {
+  const pcts = state.courses.map(c => c.pct);
+  const avg = pcts.length ? Math.round(pcts.reduce((a,b)=>a+b,0)/pcts.length) : 0;
+  const max = pcts.length ? Math.max(...pcts) : 0;
+  document.getElementById('statAvg').textContent = avg + '%';
+  document.getElementById('statMax').textContent = max + '%';
+  document.getElementById('statCount').textContent = state.courses.length;
+}
+
+// Add course modal
+function openModal(id) {
+  if (id === 'addCourseModal') {
+    state.selectedColor = COLORS[0];
+    const row = document.getElementById('newCourseColors');
+    row.innerHTML = '';
+    COLORS.forEach(col => {
+      const sw = document.createElement('div');
+      sw.className = 'color-swatch' + (state.selectedColor === col ? ' active' : '');
+      sw.style.background = col;
+      sw.onclick = () => {
+        state.selectedColor = col;
+        row.querySelectorAll('.color-swatch').forEach(s=>s.classList.remove('active'));
+        sw.classList.add('active');
+      };
+      row.appendChild(sw);
+    });
+  }
+  document.getElementById(id).classList.add('open');
+}
+
+function closeModal(id) {
+  document.getElementById(id).classList.remove('open');
+}
+
+function addCourse() {
+  const name = document.getElementById('newCourseName').value.trim();
+  if (!name) return;
+  state.courses.push({ id: Date.now(), name, pct: 0, color: state.selectedColor });
+  document.getElementById('newCourseName').value = '';
+  saveLocal();
+  pushToGistDebounced();
+  renderCourses();
+  closeModal('addCourseModal');
+  showToast('Curso agregado');
+}
+
+// ==================== GOALS ====================
+const PRIORITY_COLORS = { high:'#ef4444', med:'#eab308', low:'#22c55e' };
+const PRIORITY_EMOJI = { high:'🔴', med:'🟡', low:'🟢' };
+
+function renderGoals() {
+  const list = document.getElementById('goalsList');
+  const weekGoals = getWeekGoals();
+  list.innerHTML = '';
+
+  if (!weekGoals.length) {
+    list.innerHTML = '<p class="empty-state">Sin metas esta semana</p>';
+    return;
+  }
+
+  weekGoals.forEach(g => {
+    list.appendChild(goalEl(g, false));
+  });
+}
+
+function goalEl(g, showDate) {
+  const item = document.createElement('div');
+  item.className = 'goal-item' + (g.done ? ' done' : '');
+  item.onclick = (e) => {
+    if (e.target.classList.contains('goal-delete') || e.target.tagName==='BUTTON') return;
+    g.done = !g.done;
+    item.classList.toggle('done');
+    const check = item.querySelector('.goal-check');
+    check.textContent = g.done ? '✓' : '';
+    saveLocal();
+    pushToGistDebounced();
+    // Update heatmap for today
+    if (g.done) {
+      const key = dateKey(new Date());
+      state.heatmap[key] = Math.min((state.heatmap[key]||0)+1, 4);
+    }
+  };
+
+  const check = document.createElement('div');
+  check.className = 'goal-check';
+  check.textContent = g.done ? '✓' : '';
+
+  const text = document.createElement('div');
+  text.className = 'goal-text';
+  text.textContent = (showDate ? `[${g.week}] ` : '') + g.text;
+
+  const priDot = document.createElement('div');
+  priDot.className = 'goal-priority';
+  priDot.style.background = PRIORITY_COLORS[g.priority||'med'];
+  priDot.style.boxShadow = `0 0 5px ${PRIORITY_COLORS[g.priority||'med']}88`;
+
+  const del = document.createElement('button');
+  del.className = 'goal-delete';
+  del.textContent = '✕';
+  del.onclick = (e) => {
+    e.stopPropagation();
+    state.goals = state.goals.filter(x => x.id !== g.id);
+    saveLocal();
+    pushToGistDebounced();
+    renderGoals();
+  };
+
+  item.appendChild(check);
+  item.appendChild(text);
+  item.appendChild(priDot);
+  item.appendChild(del);
+  return item;
+}
+
+function getWeekGoals() {
+  const week = getWeekKey();
+  return state.goals.filter(g => g.week === week);
+}
+
+function getWeekKey() {
+  const d = new Date();
+  const jan1 = new Date(d.getFullYear(), 0, 1);
+  const weekNum = Math.ceil(((d - jan1) / 86400000 + jan1.getDay() + 1) / 7);
+  return `${d.getFullYear()}-W${weekNum}`;
+}
+
+function addGoal() {
+  const text = document.getElementById('goalInput').value.trim();
+  if (!text) return;
+  const priority = document.getElementById('prioritySelect').value;
+  state.goals.push({ id: Date.now(), text, priority, done: false, week: getWeekKey(), created: new Date().toISOString() });
+  document.getElementById('goalInput').value = '';
+  saveLocal();
+  pushToGistDebounced();
+  renderGoals();
+  showToast('Meta agregada');
+}
+
+function openAllGoals() {
+  const view = document.getElementById('allGoalsView');
+  view.classList.add('open');
+  const list = document.getElementById('allGoalsList');
+  list.innerHTML = '';
+
+  // Group by week
+  const groups = {};
+  state.goals.forEach(g => {
+    if (!groups[g.week]) groups[g.week] = [];
+    groups[g.week].push(g);
+  });
+
+  const weeks = Object.keys(groups).sort().reverse();
+  if (!weeks.length) {
+    list.innerHTML = '<p class="empty-state">Sin metas aún</p>';
+    return;
+  }
+
+  weeks.forEach(w => {
+    const wLabel = document.createElement('div');
+    wLabel.style.cssText = 'font-family:var(--font-mono);font-size:0.65rem;color:var(--text-muted);letter-spacing:2px;margin:16px 0 8px;';
+    wLabel.textContent = w + (w === getWeekKey() ? ' — ESTA SEMANA' : '');
+    list.appendChild(wLabel);
+
+    groups[w].forEach(g => {
+      list.appendChild(goalEl(g, false));
+    });
+  });
+}
+
+function closeAllGoals() {
+  document.getElementById('allGoalsView').classList.remove('open');
+  renderGoals();
+}
+
+// ==================== POMODORO ====================
+let pomoInterval = null;
+let pomoRunning = false;
+let pomoSeconds = 25 * 60;
+let pomoTotal = 25 * 60;
+let pomoMode = 'focus';
+const circumference = 2 * Math.PI * 54;
+
+function setPomoMode(mode, minutes) {
+  pomoMode = mode;
+  pomoSeconds = minutes * 60;
+  pomoTotal = minutes * 60;
+  if (pomoRunning) { clearInterval(pomoInterval); pomoRunning = false; }
+  document.getElementById('pomoPlayBtn').textContent = '▶';
+  document.getElementById('pomoPlayBtn').classList.add('active');
+  updatePomoDisplay();
+  ['Focus','Short','Long'].forEach(m => {
+    document.getElementById('pomo'+m+'Btn').classList.remove('active');
+  });
+  document.getElementById('pomo' + mode.charAt(0).toUpperCase()+mode.slice(1) + 'Btn').classList.add('active');
+  document.getElementById('pomoModeLabel').textContent = { focus:'FOCO', short:'DESCANSO', long:'LARGO' }[mode];
+}
+
+function togglePomo() {
+  if (pomoRunning) {
+    clearInterval(pomoInterval);
+    pomoRunning = false;
+    document.getElementById('pomoPlayBtn').textContent = '▶';
+  } else {
+    pomoRunning = true;
+    document.getElementById('pomoPlayBtn').textContent = '⏸';
+    pomoInterval = setInterval(() => {
+      pomoSeconds--;
+      if (pomoSeconds <= 0) {
+        clearInterval(pomoInterval);
+        pomoRunning = false;
+        if (pomoMode === 'focus') {
+          state.pomodoroSessions = (state.pomodoroSessions||0) + 1;
+          document.getElementById('pomoSessionCount').textContent = '🍅 ' + state.pomodoroSessions;
+          saveLocal();
+        }
+        showToast(pomoMode === 'focus' ? '🍅 ¡Sesión completa!' : '☕ ¡Descanso listo!');
+        setPomoMode(pomoMode === 'focus' ? 'short' : 'focus', pomoMode === 'focus' ? 5 : 25);
+        return;
+      }
+      updatePomoDisplay();
+    }, 1000);
+  }
+}
+
+function resetPomo() {
+  clearInterval(pomoInterval);
+  pomoRunning = false;
+  const mins = { focus:25, short:5, long:15 }[pomoMode];
+  pomoSeconds = mins * 60;
+  pomoTotal = mins * 60;
+  document.getElementById('pomoPlayBtn').textContent = '▶';
+  updatePomoDisplay();
+}
+
+function skipPomo() {
+  clearInterval(pomoInterval);
+  pomoRunning = false;
+  setPomoMode(pomoMode === 'focus' ? 'short' : 'focus', pomoMode === 'focus' ? 5 : 25);
+}
+
+function updatePomoDisplay() {
+  const m = Math.floor(pomoSeconds/60), s = pomoSeconds%60;
+  const pad = n => String(n).padStart(2,'0');
+  document.getElementById('pomoDisplay').textContent = `${pad(m)}:${pad(s)}`;
+  const offset = circumference * (1 - pomoSeconds/pomoTotal);
+  document.getElementById('pomoProgress').style.strokeDashoffset = offset;
+  document.getElementById('pomoProgress').style.strokeDasharray = circumference;
+}
+
+// ==================== NAVIGATION ====================
+function scrollToTop() { window.scrollTo({ top:0, behavior:'smooth' }); }
+function scrollToCourses() { document.querySelector('.courses-list')?.closest('.card')?.scrollIntoView({ behavior:'smooth', block:'start' }); }
+function scrollToGoals() { document.querySelector('.goals-list')?.closest('.card')?.scrollIntoView({ behavior:'smooth', block:'start' }); }
+
+// ==================== UTILS ====================
+function showToast(msg) {
+  const t = document.getElementById('toast');
+  t.textContent = msg;
+  t.classList.add('show');
+  setTimeout(() => t.classList.remove('show'), 2500);
+}
+
+// ==================== RENDER ALL ====================
+function renderAll() {
+  loadQuote();
+  buildHeatmap();
+  renderCourses();
+  renderGoals();
+  document.getElementById('pomoSessionCount').textContent = '🍅 ' + (state.pomodoroSessions||0);
+  updatePomoDisplay();
+  if (gistConfig.token && gistConfig.gistId) setSyncStatus(true);
+}
+
+// ==================== INIT ====================
+loadLocal();
+renderAll();
+drawClock();
+</script>
+</body>
+</html>
